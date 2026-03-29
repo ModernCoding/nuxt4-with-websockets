@@ -19,6 +19,7 @@ export default defineNuxtConfig({
   // This is where we define our variables
   runtimeConfig: {
     // 1. Private Keys (Only available in /server folder)
+    pusherAppId: process.env.NUXT_PUSHER_API,
     pusherSecret: process.env.NUXT_PUSHER_SECRET,
     // ablySecret: process.env.NUXT_ABLY_SECRET,
 

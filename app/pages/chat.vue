@@ -1,46 +1,32 @@
 <script setup>
-const messages = ref([]);
-const newMessage = ref("");
-const room = ref("lobby");
-let ws;
+// const { $pusher, $echo, $socket } = useNuxtApp()
+const { $pusher } = useNuxtApp()
+const messages = ref([])
+const input = ref('')
 
 onMounted(() => {
-  // Use 'ws://' for dev and 'wss://' for production
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+  // Pusher Style
+  $pusher.subscribe('chat-room').bind('message', (data) => messages.value.push(data))
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    messages.value.push(data);
-  };
-});
+  // Ably Style
+  // $echo.channel('chat-room').listen('message', (data) => messages.value.push(data))
 
-const sendMessage = () => {
-  const payload = { type: 'chat', room: room.value, text: newMessage.value };
-  ws.send(JSON.stringify(payload));
-  newMessage.value = "";
-};
+  // // PartyKit Style
+  // $socket.addEventListener('message', (e) => messages.value.push(JSON.parse(e.data)))
+})
 
-const joinRoom = (name) => {
-  room.value = name;
-  ws.send(JSON.stringify({ type: 'join', room: name }));
-  messages.value = []; // Clear local history when switching rooms
-};
+async function sendMessage() {
+  await $fetch('/api/send', { 
+    method: 'POST', 
+    body: { text: input.value } 
+  })
+  input.value = ''
+}
 </script>
 
 <template>
-  <div class="p-4">
-    <div class="flex gap-2 mb-4">
-      <button @click="joinRoom('lobby')" class="border p-1">Lobby</button>
-      <button @click="joinRoom('gaming')" class="border p-1">Gaming</button>
-    </div>
-
-    <div class="h-64 border overflow-y-auto p-2 mb-4">
-      <div v-for="(m, i) in messages" :key="i">
-        <strong>{{ m.user }}:</strong> {{ m.text }}
-      </div>
-    </div>
-
-    <input v-model="newMessage" @keyup.enter="sendMessage" class="border p-2 w-full" placeholder="Type a message..." />
+  <div class="p-10">
+    <div v-for="m in messages" class="border-b">{{ m.text }}</div>
+    <input v-model="input" @keyup.enter="sendMessage" placeholder="Type here..." class="border p-2 w-full" />
   </div>
 </template>
